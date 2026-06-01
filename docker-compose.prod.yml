@@ -1,0 +1,69 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: notifyx-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: notifyx
+      POSTGRES_PASSWORD: notifyxpass
+      POSTGRES_DB: notifyxdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - notifyx-network
+
+  redis:
+    image: redis:7
+    container_name: notifyx-redis
+    restart: always
+    networks:
+      - notifyx-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: notifyx-backend
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+    networks:
+      - notifyx-network
+
+  worker:
+    build:
+      context: ./backend
+    container_name: notifyx-worker
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./backend/.env
+    command: npm run worker
+    networks:
+      - notifyx-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: notifyx-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - notifyx-network
+
+volumes:
+  postgres_data:
+
+networks:
+  notifyx-network:
