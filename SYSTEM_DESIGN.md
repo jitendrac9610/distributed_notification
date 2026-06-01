@@ -8,12 +8,6 @@ This document describes the architectural design, data flows, and scalability pa
 
 ```txt
                                +-----------------------+
-                               |    React Frontend     |
-                               +-----------+-----------+
-                                           |
-                                           | HTTP / WebSockets
-                                           v
-                               +-----------+-----------+
                                |     Load Balancer     |
                                +-----------+-----------+
                                            |
@@ -24,30 +18,38 @@ This document describes the architectural design, data flows, and scalability pa
              |  Node.js API Node 1 |             |  Node.js API Node 2 |
              | (Rate Limiter check)|             | (Rate Limiter check)|
              +----+-----------+----+             +----+-----------+----+
-                  |           |                       |           |
-                  |           +-----------+-----------+           |
-     Write        v                       |                       v  Write
-  Notification  +-----------+             | Pub/Sub            +-----------+  Notification
-   (PENDING)    |           |             v                    |           |   (PENDING)
-  +------------>+PostgreSQL <===+  +------+------+  +=========>+PostgreSQL <------------+
-  |             |  Database |   |  |    Redis    |  |          |  Database |             |
-  |             +-----------+   |  |   Instance  |  |          +-----------+             |
-  |             (Compound Indexes) +------+------+  (Compound Indexes)                  |
-  |                             |         |         |                                    |
-  |                             |         | Queue   |                                    |
-  |                             |         v         |                                    |
-  |                             |  +------+------+  |                                    |
-  |  Update status & Log        |  |   BullMQ    |  |          Update status & Log       |
-  |  (DELIVERED / FAILED)       |  |  Delivery   |  |          (DELIVERED / FAILED)      |
-  |                             |  |    Queue    |  |                                    |
-  |                             |  +------+------+  |                                    |
-  |                             |         |         |                                    |
-  |                             |         | Process |                                    |
-  |                             |         v         |                                    |
-  |                       +-----+---------+---------+-----+                              |
-  |                       |       Background Worker       |                              |
-  |                       +-----------+           +-------+                              |
-  +-----------------------------------+           +--------------------------------------+
+                  |           ^                       |           ^
+      Write       |           | Pub/Sub               |           | Pub/Sub
+      PENDING     |           | Broadcast             |           | Broadcast
+      v           |           |                       v           |
+  +---+--------+  | Enqueue   |                   +---+--------+  | Enqueue
+  | PostgreSQL |  | Job       |                   | PostgreSQL |  | Job
+  |  Database  |  |           |                   |  Database  |  |
+  +---+--------+  v           |                   +---+--------+  v
+      ^      ^    +-----------+-----------+           ^      ^    +-----------+
+      |      |                |                       |      |                |
+      |      +----------------)-----------------------+      +----------------+
+      |                       v
+      |                 +-----+-------+
+      |                 |    Redis    | <-------------------------------------+
+      |                 |   Instance  |                                       |
+      |                 +-----+-------+                                       |
+      |                       |                                               |
+      |                       | Queue                                         |
+      |                       v                                               |
+      |                 +-----+-------+                                       |
+      |                 |   BullMQ    |                                       |
+      |                 |  Delivery   |                                       |
+      |                 |    Queue    |                                       |
+      |                 +-----+-------+                                       |
+      |                       |                                               |
+      |                       | Process                                       |
+      |                       v                                               |
+      |                 +-----+-------+                                       |
+      |                 | Background  |                                       |
+      +-----------------+   Worker    +---------------------------------------+
+      Update Status &   +-------------+                         Publish Event
+      Logs (DELIVERED)                                          (notifications)
 ```
 
 ---

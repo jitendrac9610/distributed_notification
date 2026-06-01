@@ -157,11 +157,12 @@ export const getHealth = async (req: Request, res: Response) => {
       console.error('[Health] BullMQ Worker error:', e);
     }
 
+    const isWorkerRequired = process.env.DISABLE_WORKER !== 'true';
     const overallHealthy =
       dbStatus === 'UP' &&
       redisStatus === 'UP' &&
       queueStatus === 'UP' &&
-      workerStatus === 'UP';
+      (!isWorkerRequired || workerStatus === 'UP');
 
     const statusCode = overallHealthy ? 200 : 503;
 
