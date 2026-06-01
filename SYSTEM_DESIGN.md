@@ -8,6 +8,12 @@ This document describes the architectural design, data flows, and scalability pa
 
 ```txt
                                +-----------------------+
+                               |    React Frontend     |
+                               +-----------+-----------+
+                                           |
+                                           | HTTP / WebSockets
+                                           v
+                               +-----------+-----------+
                                |     Load Balancer     |
                                +-----------+-----------+
                                            |
@@ -155,4 +161,3 @@ In a scaled system:
 * **API Scaling**: Launch multiple backend container replicas behind an AWS Application Load Balancer (ALB) or Nginx reverse proxy.
 * **Worker Scaling**: Spin up multiple worker containers independently without changing code; BullMQ locks ensure safe single-job execution.
 * **Redis Clustering**: Replace the single Redis container with a managed AWS ElastiCache cluster for sub-millisecond Redis memory operations under high throughput.
-
