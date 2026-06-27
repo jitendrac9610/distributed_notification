@@ -240,14 +240,6 @@ docker logs notifyx-worker
 
 ---
 
-## 📝 Resume Bullet Points (Interview Ready)
-
-* **System Design Resume Bullet**: 
-  > Designed and implemented **NotifyX**, a distributed real-time notification queue system using Node.js, Socket.io, Redis Pub/Sub, BullMQ, PostgreSQL, Prisma, and React. Built compound database indexes to optimize queries for 1M users, implemented Redis-based rate limiting to prevent ingestion spam, integrated centralized error handling/graceful shutdown hooks, and wrote native load-testing scripts achieving high-throughput, low-latency notification delivery.
-
-* **Deployment Resume Bullet**:
-  > Dockerized and deployed NotifyX on AWS EC2 using Docker Compose, separating React frontend, Node.js API, BullMQ worker, PostgreSQL, and Redis into independent containers; implemented WebSocket-based real-time delivery, Redis-backed queue processing, offline sync, health checks, and production environment configuration.
-
 * **Key Scalability Answers**:
   * **How do you scale WebSockets horizontally?** WebSockets are stateful, meaning a client connects to one specific node. When a notification is processed, the backend publishes the event to a shared Redis Pub/Sub channel. All WebSocket servers listen, and the node holding the active TCP connection delivers the message.
   * **How do workers avoid database bottlenecking?** Job processing is offloaded to independent background workers. They pull tasks asynchronously from BullMQ. Databases are indexed on `(recipientId, status)` and `(recipientId, createdAt)` to ensure fast query times under high data volumes.
